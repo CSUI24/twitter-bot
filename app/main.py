@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.controllers.tweet_controller import router as tweet_router
 from app.core.config import get_settings
 from app.core.exceptions import TwitterConfigurationError, TwitterServiceError
+from app.dependencies import require_bearer_token
 from app.schemas.tweet import ErrorResponse
 
 
@@ -35,11 +36,15 @@ def create_app() -> FastAPI:
             content=ErrorResponse(detail=exc.message).model_dump(),
         )
 
-    @app.get("/health", tags=["health"])
+    @app.get("/health", tags=["health"], dependencies=[Depends(require_bearer_token)])
     async def health_check() -> dict[str, str]:
         return {"status": "ok", "service": "twitter"}
 
-    app.include_router(tweet_router, prefix="/api/v1")
+    app.include_router(
+        tweet_router,
+        prefix="/api/v1",
+        dependencies=[Depends(require_bearer_token)],
+    )
     return app
 
 
