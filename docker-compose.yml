@@ -1,7 +1,7 @@
 services:
-  fastapi_app:
+  twitter-service:
     build: .
-    container_name: twitter-bot
+    container_name: twitter-service
     restart: always
     ports:
       - "8000:8000"
