@@ -1,10 +1,14 @@
+from typing import TYPE_CHECKING
+
 from app.core.exceptions import TwitterServiceError
 from app.schemas.tweet import CreateTweetRequest, CreateTweetResponse, DeleteTweetResponse
-from app.services.twitter_client import TwitterClientProvider
+
+if TYPE_CHECKING:
+    from app.services.twitter_client import TwitterClientProvider
 
 
 class TweetService:
-    def __init__(self, client_provider: TwitterClientProvider) -> None:
+    def __init__(self, client_provider: "TwitterClientProvider") -> None:
         self.client_provider = client_provider
 
     def create_tweet(self, payload: CreateTweetRequest) -> CreateTweetResponse:

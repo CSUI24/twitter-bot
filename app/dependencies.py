@@ -1,18 +1,23 @@
 import secrets
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import get_settings
 from app.services.tweet_service import TweetService
-from app.services.twitter_client import TwitterClientProvider
+
+if TYPE_CHECKING:
+    from app.services.twitter_client import TwitterClientProvider
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
 @lru_cache
-def get_twitter_client_provider() -> TwitterClientProvider:
+def get_twitter_client_provider() -> "TwitterClientProvider":
+    from app.services.twitter_client import TwitterClientProvider
+
     return TwitterClientProvider(get_settings())
 
 
