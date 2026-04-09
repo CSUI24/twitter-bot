@@ -1,4 +1,4 @@
-twitter-openapi-python @ git+https://github.com/CSUI24/twitter_openapi_python.git
+twitter-openapi-python @ git+https://github.com/CSUI24/twitter_openapi_python.git#subdirectory=twitter_openapi_python
 tweepy_authlib
 fastapi
 uvicorn
