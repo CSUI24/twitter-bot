@@ -1,10 +1,12 @@
 from threading import Lock
 
 from twitter_openapi_python import TwitterOpenapiPython
+from twitter_openapi_python import client as twitter_openapi_client
 from twitter_openapi_python.client import TwitterOpenapiPythonClient
 
 from app.core.config import Settings
 from app.core.exceptions import TwitterConfigurationError
+from app.services.transaction_id import build_client_transaction
 
 
 class TwitterClientProvider:
@@ -28,6 +30,12 @@ class TwitterClientProvider:
         platform_header = f'"{self.settings.twitter_platform_header}"'
         client.additional_api_headers = {"sec-ch-ua-platform": platform_header}
         client.additional_browser_headers = {"sec-ch-ua-platform": platform_header}
+
+        # The library builds its transaction-id generator from a hardcoded, cookie-less
+        # call to `get_tid()`, which x.com no longer serves the needed manifest to. There
+        # is no injection point, so swap the module-level function for a cookie-aware one.
+        twitter_openapi_client.get_tid = lambda: build_client_transaction(cookies)
+
         return client.get_client_from_cookies(cookies=cookies)
 
     def _load_cookies(self) -> dict[str, str]:
