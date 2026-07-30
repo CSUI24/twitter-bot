@@ -6,6 +6,7 @@ from twitter_openapi_python.client import TwitterOpenapiPythonClient
 
 from app.core.config import Settings
 from app.core.exceptions import TwitterConfigurationError
+from app.services.openapi_patches import relax_null_lists
 from app.services.transaction_id import build_client_transaction
 
 
@@ -25,6 +26,7 @@ class TwitterClientProvider:
 
     def _build_client(self) -> TwitterOpenapiPythonClient:
         cookies = self._load_cookies()
+        relax_null_lists()
 
         client = TwitterOpenapiPython()
         platform_header = f'"{self.settings.twitter_platform_header}"'
