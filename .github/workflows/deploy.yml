@@ -20,6 +20,8 @@ jobs:
           script: |
             mkdir -p /opt/twitter-service
             echo "${{ secrets.ENV_FILE }}" > /opt/twitter-service/.env
+            sed -i '/^TWITTER_MEDIA_ALLOWED_HOSTS=/d' /opt/twitter-service/.env
+            printf '%s\n' 'TWITTER_MEDIA_ALLOWED_HOSTS=assets-menfess.csui.dev' >> /opt/twitter-service/.env
 
       - name: Deploy via SSH
         uses: appleboy/scp-action@master
