@@ -162,7 +162,7 @@ class TwitterMediaUploader:
                 timeout=(5, 30),
                 allow_redirects=False,
             )
-            if initialize.status_code != 200:
+            if initialize.status_code not in (200, 202):
                 raise TwitterServiceError(
                     self._x_upload_error(
                         "initialization", initialize.status_code, initialize.text,
