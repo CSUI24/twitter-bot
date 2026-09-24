@@ -164,7 +164,11 @@ class TwitterMediaUploader:
             )
             if initialize.status_code != 200:
                 raise TwitterServiceError(
-                    f"X rejected the image upload initialization (HTTP {initialize.status_code})."
+                    self._x_upload_error(
+                        "initialization", initialize.status_code, initialize.text,
+                        initialize.headers.get("x-transaction-id")
+                        or initialize.headers.get("x-request-id"),
+                    )
                 )
             media_id = initialize.json().get("media_id_string")
             if not isinstance(media_id, str) or not media_id:
@@ -190,7 +194,11 @@ class TwitterMediaUploader:
             )
             if append.status_code not in (200, 204):
                 raise TwitterServiceError(
-                    f"X rejected an image upload segment (HTTP {append.status_code})."
+                    self._x_upload_error(
+                        "segment upload", append.status_code, append.text,
+                        append.headers.get("x-transaction-id")
+                        or append.headers.get("x-request-id"),
+                    )
                 )
 
             finalize = session.post(
@@ -202,10 +210,29 @@ class TwitterMediaUploader:
             )
             if finalize.status_code != 200:
                 raise TwitterServiceError(
-                    f"X could not finalize an image upload (HTTP {finalize.status_code})."
+                    self._x_upload_error(
+                        "finalization", finalize.status_code, finalize.text,
+                        finalize.headers.get("x-transaction-id")
+                        or finalize.headers.get("x-request-id"),
+                    )
                 )
             return media_id
         except requests.RequestException as exc:
             raise TwitterServiceError("Could not upload an image to X.") from exc
         except (ValueError, TypeError) as exc:
             raise TwitterServiceError("X returned an invalid image upload response.") from exc
+
+    @staticmethod
+    def _x_upload_error(
+        stage: str,
+        status_code: int,
+        response_body: str,
+        request_id: str | None,
+    ) -> str:
+        detail = " ".join(response_body.split())[:300]
+        message = f"X rejected image upload {stage} (HTTP {status_code})"
+        if detail:
+            message += f": {detail}"
+        if request_id:
+            message += f" [request ID: {request_id}]"
+        return message + "."

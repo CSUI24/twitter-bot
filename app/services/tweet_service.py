@@ -57,8 +57,6 @@ class TweetService:
         except Exception as exc:
             raise TwitterServiceError(f"Failed to delete tweet {tweet_id}: {exc}") from exc
 
-        print(response)
-
         return DeleteTweetResponse(
             tweet_id=tweet_id,
             deleted=True,

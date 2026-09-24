@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
@@ -6,6 +8,8 @@ from app.core.config import get_settings
 from app.core.exceptions import TwitterConfigurationError, TwitterServiceError
 from app.dependencies import require_bearer_token
 from app.schemas.tweet import ErrorResponse
+
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
@@ -31,6 +35,7 @@ def create_app() -> FastAPI:
         request: Request,
         exc: TwitterServiceError,
     ) -> JSONResponse:
+        logger.warning("Twitter request failed: %s", exc.message)
         return JSONResponse(
             status_code=exc.status_code,
             content=ErrorResponse(detail=exc.message).model_dump(),
