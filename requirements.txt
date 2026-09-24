@@ -3,3 +3,4 @@ tweepy_authlib
 fastapi
 uvicorn
 python-dotenv
+requests

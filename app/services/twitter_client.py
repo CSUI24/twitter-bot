@@ -24,6 +24,20 @@ class TwitterClientProvider:
 
         return self._client
 
+    def get_media_upload_headers(self) -> dict[str, str]:
+        client = self.get_client()
+        return {
+            "authorization": f"Bearer {client.api.configuration.access_token}",
+            "cookie": client.api.cookie,
+            "origin": "https://x.com",
+            "referer": "https://x.com/home",
+            "user-agent": client.api.user_agent,
+            "x-csrf-token": self.settings.twitter_ct0 or "",
+            "x-twitter-active-user": "yes",
+            "x-twitter-auth-type": "OAuth2Session",
+            "x-twitter-client-language": "en",
+        }
+
     def _build_client(self) -> TwitterOpenapiPythonClient:
         cookies = self._load_cookies()
         relax_null_lists()

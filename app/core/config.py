@@ -17,6 +17,7 @@ class Settings:
     twitter_auth_token: str | None
     twitter_ct0: str | None
     twitter_platform_header: str
+    twitter_media_allowed_hosts: tuple[str, ...]
 
 
 @lru_cache
@@ -30,4 +31,9 @@ def get_settings() -> Settings:
         twitter_auth_token=os.getenv("TWITTER_AUTH_TOKEN"),
         twitter_ct0=os.getenv("TWITTER_CT0"),
         twitter_platform_header=os.getenv("TWITTER_SEC_CH_UA_PLATFORM", "Windows"),
+        twitter_media_allowed_hosts=tuple(
+            host.strip().lower().rstrip(".")
+            for host in os.getenv("TWITTER_MEDIA_ALLOWED_HOSTS", "").split(",")
+            if host.strip()
+        ),
     )
