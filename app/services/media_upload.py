@@ -208,7 +208,7 @@ class TwitterMediaUploader:
                 timeout=(5, 30),
                 allow_redirects=False,
             )
-            if finalize.status_code != 200:
+            if finalize.status_code not in (200, 201):
                 raise TwitterServiceError(
                     self._x_upload_error(
                         "finalization", finalize.status_code, finalize.text,
