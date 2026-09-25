@@ -1,3 +1,4 @@
+from time import monotonic, sleep
 from urllib.parse import urlsplit
 
 import requests
@@ -7,6 +8,7 @@ from app.core.exceptions import TwitterConfigurationError, TwitterServiceError
 from app.services.twitter_client import TwitterClientProvider
 
 MAX_IMAGE_BYTES = 1_048_576
+MAX_MEDIA_PROCESSING_SECONDS = 90
 MEDIA_UPLOAD_URL = "https://upload.x.com/i/media/upload.json"
 ALLOWED_IMAGE_TYPES = {
     "image/jpeg": ".jpg",
@@ -156,7 +158,9 @@ class TwitterMediaUploader:
                     "command": "INIT",
                     "total_bytes": str(len(image_bytes)),
                     "media_type": media_type,
-                    "media_category": "tweet_image",
+                    "media_category": (
+                        "tweet_gif" if media_type == "image/gif" else "tweet_image"
+                    ),
                 },
                 headers=headers,
                 timeout=(5, 30),
@@ -216,11 +220,79 @@ class TwitterMediaUploader:
                         or finalize.headers.get("x-request-id"),
                     )
                 )
+            processing_info = finalize.json().get("processing_info")
+            if isinstance(processing_info, dict):
+                self._wait_for_processing(session, headers, media_id, processing_info)
             return media_id
         except requests.RequestException as exc:
             raise TwitterServiceError("Could not upload an image to X.") from exc
         except (ValueError, TypeError) as exc:
             raise TwitterServiceError("X returned an invalid image upload response.") from exc
+
+    def _wait_for_processing(
+        self,
+        session: requests.Session,
+        headers: dict[str, str],
+        media_id: str,
+        processing_info: dict,
+    ) -> None:
+        deadline = monotonic() + MAX_MEDIA_PROCESSING_SECONDS
+
+        while True:
+            state = processing_info.get("state")
+            if state == "succeeded":
+                return
+            if state == "failed":
+                error = processing_info.get("error") or {}
+                detail = error.get("message") or error.get("name")
+                message = "X could not process the uploaded GIF."
+                if detail:
+                    message += f" {detail}"
+                raise TwitterServiceError(message)
+            if state not in {"pending", "in_progress"}:
+                raise TwitterServiceError(
+                    "X returned an unknown media processing state."
+                )
+
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise TwitterServiceError(
+                    "X did not finish processing the uploaded GIF in time."
+                )
+
+            try:
+                delay = max(0.1, float(processing_info.get("check_after_secs", 1)))
+            except (TypeError, ValueError):
+                delay = 1
+            sleep(min(delay, remaining))
+
+            try:
+                status = session.get(
+                    MEDIA_UPLOAD_URL,
+                    params={"command": "STATUS", "media_id": media_id},
+                    headers=headers,
+                    timeout=(5, 30),
+                    allow_redirects=False,
+                )
+                if status.status_code != 200:
+                    raise TwitterServiceError(
+                        self._x_upload_error(
+                            "processing status",
+                            status.status_code,
+                            status.text,
+                            status.headers.get("x-transaction-id")
+                            or status.headers.get("x-request-id"),
+                        )
+                    )
+                status_payload = status.json()
+            except requests.RequestException as exc:
+                raise TwitterServiceError(
+                    "Could not check GIF processing status with X."
+                ) from exc
+
+            processing_info = status_payload.get("processing_info")
+            if not isinstance(processing_info, dict):
+                raise TwitterServiceError("X did not return a GIF processing status.")
 
     @staticmethod
     def _x_upload_error(
