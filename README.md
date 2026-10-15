@@ -1,5 +1,4 @@
 This is the Twitter service for menfess.
-
 ### Attach images to tweets
 
 The `POST /api/v1/tweets` endpoint accepts up to four public HTTPS image URLs in
