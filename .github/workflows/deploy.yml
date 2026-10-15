@@ -1,44 +1,24 @@
-name: Deploy to VPS
+name: Deploy Twitter Service via Dokploy
 
 on:
   push:
-    branches: [master]
+    branches:
+      - master
+    paths-ignore:
+      - '.github/workflows/deploy.yml'
+      - '.github/actions/deploy-dokploy/action.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: twitter-service-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .env file on VPS
-        uses: appleboy/ssh-action@master
+      - name: Deploy through Dokploy
+        uses: ./.github/actions/deploy-dokploy
         with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            mkdir -p /opt/twitter-service
-            echo "${{ secrets.ENV_FILE }}" > /opt/twitter-service/.env
-            sed -i '/^TWITTER_MEDIA_ALLOWED_HOSTS=/d' /opt/twitter-service/.env
-            printf '%s\n' 'TWITTER_MEDIA_ALLOWED_HOSTS=assets-menfess.csui.dev' >> /opt/twitter-service/.env
-
-      - name: Deploy via SSH
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "."
-          target: "/opt/twitter-service"
-
-      - name: Build and Run Docker
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/twitter-service
-            docker compose up -d --build
-            docker image prune -f
+          compose_id: 6EWHGpJiY4TfeQyQNOIDa
+          dokploy_api_key: ${{ secrets.DOKPLOY_API_KEY }}
