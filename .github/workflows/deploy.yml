@@ -17,6 +17,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository for local action
+        uses: actions/checkout@v4
+
       - name: Deploy through Dokploy
         uses: ./.github/actions/deploy-dokploy
         with:
